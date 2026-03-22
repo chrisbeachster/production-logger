@@ -95,12 +95,24 @@
 
     #status-text.active { color: var(--success); }
 
+    #elapsed-display {
+      text-align: center;
+      margin-bottom: 1.25rem;
+    }
+
     #elapsed {
-      margin-left: auto;
       font-variant-numeric: tabular-nums;
-      font-size: 0.9rem;
+      font-size: 3.5rem;
+      font-weight: 700;
+      letter-spacing: 2px;
       color: var(--muted);
-      letter-spacing: 0.5px;
+      transition: color 0.3s;
+      line-height: 1;
+    }
+
+    #elapsed.active {
+      color: var(--success);
+      text-shadow: 0 0 18px rgba(62, 207, 142, 0.35);
     }
 
     /* Controls */
@@ -279,7 +291,10 @@
   <div class="status-bar">
     <div class="status-dot" id="status-dot"></div>
     <span id="status-text">Session not started</span>
-    <span id="elapsed"></span>
+  </div>
+
+  <div id="elapsed-display">
+    <span id="elapsed">00:00</span>
   </div>
 
   <div class="controls">
@@ -459,6 +474,7 @@
       logBody.appendChild(emptyRow);
       entryCount.textContent = '0 entries';
       elapsedEl.textContent = '00:00';
+      elapsedEl.classList.add('active');
       hideInput();
       setActive(true);
       startTimer();
@@ -477,7 +493,8 @@
       stopTimer();
       setActive(false);
       hideInput();
-      elapsedEl.textContent = '';
+      elapsedEl.textContent = '00:00';
+      elapsedEl.classList.remove('active');
       if (entries.length > 0) {
         exportCsv();
       }
