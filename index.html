@@ -34,15 +34,13 @@
     }
 
     #wall-clock {
-      position: fixed;
-      top: 1rem;
-      right: 1.25rem;
       font-variant-numeric: tabular-nums;
       font-size: 1.4rem;
       font-weight: 600;
       letter-spacing: 1px;
       color: var(--muted);
       line-height: 1;
+      margin-left: auto;
     }
 
     #wall-clock .ampm {
@@ -301,8 +299,6 @@
 </head>
 <body>
 
-<div id="wall-clock"><span id="clock-time"></span><span class="ampm" id="clock-ampm"></span></div>
-
 <header>
   <h1>Production Logger</h1>
   <p>Record timestamped notes during a production session.</p>
@@ -313,6 +309,7 @@
   <div class="status-bar">
     <div class="status-dot" id="status-dot"></div>
     <span id="status-text">Session not started</span>
+    <div id="wall-clock"><span id="clock-time"></span><span class="ampm" id="clock-ampm"></span></div>
   </div>
 
   <div id="elapsed-display">
