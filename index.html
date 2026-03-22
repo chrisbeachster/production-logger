@@ -33,6 +33,26 @@
       padding: 2rem 1rem;
     }
 
+    #wall-clock {
+      position: fixed;
+      top: 1rem;
+      right: 1.25rem;
+      font-variant-numeric: tabular-nums;
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--muted);
+      line-height: 1;
+    }
+
+    #wall-clock .ampm {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      margin-left: 0.2rem;
+      vertical-align: super;
+    }
+
     header {
       text-align: center;
       margin-bottom: 2rem;
@@ -281,6 +301,8 @@
 </head>
 <body>
 
+<div id="wall-clock"><span id="clock-time"></span><span class="ampm" id="clock-ampm"></span></div>
+
 <header>
   <h1>Production Logger</h1>
   <p>Record timestamped notes during a production session.</p>
@@ -339,6 +361,24 @@
 <footer>Production Logger &mdash; data never leaves your browser.</footer>
 
 <script>
+  // Wall clock
+  (() => {
+    const timeEl = document.getElementById('clock-time');
+    const ampmEl = document.getElementById('clock-ampm');
+    function tick() {
+      const now = new Date();
+      let h = now.getHours();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      timeEl.textContent = `${h}:${m}:${s}`;
+      ampmEl.textContent = ampm;
+    }
+    tick();
+    setInterval(tick, 1000);
+  })();
+
   (() => {
     const btnStart  = document.getElementById('btn-start');
     const btnLog    = document.getElementById('btn-log');
