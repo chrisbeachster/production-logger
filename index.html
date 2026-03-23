@@ -1,361 +1,142 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-[#0f1117]">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Production Logger</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            surface: '#1a1d27',
+            border:  '#2a2d3a',
+            accent:  '#4f8ef7',
+            success: '#3ecf8e',
+            danger:  '#e05252',
+            muted:   '#6b7280',
+            base:    '#0f1117',
+          },
+          fontFamily: {
+            sans: ['"Segoe UI"', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Tabular nums for all clocks */
+    #elapsed, #clock-time { font-variant-numeric: tabular-nums; }
 
-    :root {
-      --bg: #0f1117;
-      --surface: #1a1d27;
-      --border: #2a2d3a;
-      --accent: #4f8ef7;
-      --accent-hover: #3a7aee;
-      --danger: #e05252;
-      --danger-hover: #c43e3e;
-      --success: #3ecf8e;
-      --text: #e2e4ed;
-      --muted: #6b7280;
-      --log-row-odd: #1e2130;
-      --log-row-even: #1a1d27;
+    /* Active elapsed glow */
+    #elapsed.active { color: #3ecf8e; text-shadow: 0 0 18px rgba(62,207,142,0.35); }
+
+    /* Active status dot pulse */
+    @keyframes dot-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    #status-dot.active {
+      background: #3ecf8e;
+      box-shadow: 0 0 6px #3ecf8e;
+      animation: dot-pulse 1.5s infinite;
     }
 
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem 1rem;
-    }
+    /* Active status text */
+    #status-text.active { color: #3ecf8e; }
 
-    #wall-clock {
-      font-variant-numeric: tabular-nums;
-      font-size: 1.4rem;
-      font-weight: 600;
-      letter-spacing: 1px;
-      color: var(--muted);
-      line-height: 1;
-      margin-left: auto;
-    }
+    /* Log input hidden/visible */
+    #log-input-area { display: none; }
+    #log-input-area.visible { display: flex; }
 
-    #wall-clock .ampm {
-      font-size: 0.7rem;
-      font-weight: 500;
-      letter-spacing: 0.5px;
-      margin-left: 0.2rem;
-      vertical-align: super;
-    }
-
-    header {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-
-    header h1 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-    }
-
-    header p {
-      color: var(--muted);
-      margin-top: 0.4rem;
-      font-size: 0.9rem;
-    }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      width: 100%;
-      max-width: 720px;
-      margin-bottom: 1.5rem;
-    }
-
-    /* Status bar */
-    .status-bar {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--muted);
-      flex-shrink: 0;
-      transition: background 0.3s;
-    }
-
-    .status-dot.active {
-      background: var(--success);
-      box-shadow: 0 0 6px var(--success);
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-
-    #status-text {
-      font-size: 0.9rem;
-      color: var(--muted);
-    }
-
-    #status-text.active { color: var(--success); }
-
-    #elapsed-display {
-      text-align: center;
-      margin-bottom: 1.25rem;
-    }
-
-    #elapsed {
-      font-variant-numeric: tabular-nums;
-      font-size: 3.5rem;
-      font-weight: 700;
-      letter-spacing: 2px;
-      color: var(--muted);
-      transition: color 0.3s;
-      line-height: 1;
-    }
-
-    #elapsed.active {
-      color: var(--success);
-      text-shadow: 0 0 18px rgba(62, 207, 142, 0.35);
-    }
-
-    /* Controls */
-    .controls {
-      display: flex;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
-
-    button {
-      cursor: pointer;
-      border: none;
-      border-radius: 8px;
-      padding: 0.6rem 1.4rem;
-      font-size: 0.9rem;
-      font-weight: 600;
-      transition: background 0.15s, transform 0.1s, opacity 0.15s;
-    }
-
-    button:active { transform: scale(0.97); }
-    button:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
-
-    #btn-start {
-      background: var(--accent);
-      color: #fff;
-    }
-    #btn-start:hover:not(:disabled) { background: var(--accent-hover); }
-
-    #btn-log {
-      background: var(--success);
-      color: #000;
-    }
-    #btn-log:hover:not(:disabled) { background: #32be7e; }
-
-    #btn-stop {
-      background: var(--danger);
-      color: #fff;
-      margin-left: auto;
-    }
-    #btn-stop:hover:not(:disabled) { background: var(--danger-hover); }
-
-    /* Log input area */
-    #log-input-area {
-      display: none;
-      margin-top: 1.25rem;
-      gap: 0.75rem;
-    }
-
-    #log-input-area.visible {
-      display: flex;
-    }
-
-    #note-input {
-      flex: 1;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 0.9rem;
-      padding: 0.6rem 0.9rem;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-
-    #note-input:focus { border-color: var(--accent); }
-    #note-input::placeholder { color: var(--muted); }
-
-    #btn-submit-note {
-      background: var(--accent);
-      color: #fff;
-      padding: 0.6rem 1.2rem;
-    }
-    #btn-submit-note:hover { background: var(--accent-hover); }
-
-    /* Log table */
-    .log-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1rem;
-    }
-
-    .log-header h2 {
-      font-size: 1rem;
-      font-weight: 600;
-    }
-
-    #entry-count {
-      font-size: 0.8rem;
-      color: var(--muted);
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 0.2rem 0.7rem;
-    }
-
-    .table-wrap {
-      overflow-x: auto;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
-    }
-
-    thead th {
-      background: var(--bg);
-      text-align: left;
-      padding: 0.6rem 0.9rem;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      font-size: 0.75rem;
-      letter-spacing: 0.5px;
-    }
-
-    tbody tr:nth-child(odd)  { background: var(--log-row-odd); }
-    tbody tr:nth-child(even) { background: var(--log-row-even); }
-
-    tbody td {
-      padding: 0.55rem 0.9rem;
-      vertical-align: top;
-    }
-
-    .td-seq {
-      color: var(--muted);
-      width: 3rem;
-      text-align: right;
-      padding-right: 1rem;
-    }
-
-    .td-time {
-      width: 12rem;
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-      color: var(--muted);
-    }
-
-    .td-elapsed {
-      width: 6rem;
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-      color: var(--muted);
-    }
-
-    .td-note { word-break: break-word; }
-
-    #empty-state {
-      text-align: center;
-      padding: 2rem;
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    footer {
-      margin-top: auto;
-      padding-top: 2rem;
-      color: var(--muted);
-      font-size: 0.78rem;
-      text-align: center;
-    }
+    /* Striped table rows */
+    #log-body tr:nth-child(odd)  { background: #1e2130; }
+    #log-body tr:nth-child(even) { background: #1a1d27; }
   </style>
 </head>
-<body>
+<body class="min-h-screen bg-[#0f1117] text-[#e2e4ed] font-sans flex flex-col items-center px-4 py-8">
 
-<header>
-  <h1>Production Logger</h1>
-  <p>Record timestamped notes during a production session.</p>
-</header>
+  <!-- Header -->
+  <header class="text-center mb-8">
+    <h1 class="text-3xl font-bold tracking-wide">Production Logger</h1>
+    <p class="text-muted text-sm mt-1">Record timestamped notes during a production session.</p>
+  </header>
 
-<!-- Session controls -->
-<div class="card">
-  <div class="status-bar">
-    <div class="status-dot" id="status-dot"></div>
-    <span id="status-text">Session not started</span>
-    <div id="wall-clock"><span id="clock-time"></span><span class="ampm" id="clock-ampm"></span></div>
+  <!-- Session controls card -->
+  <div class="w-full max-w-2xl bg-surface border border-border rounded-xl p-6 mb-6">
+
+    <!-- Status bar -->
+    <div class="flex items-center gap-3 mb-5">
+      <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-muted flex-shrink-0 transition-colors duration-300"></div>
+      <span id="status-text" class="text-sm text-muted">Session not started</span>
+      <!-- Wall clock -->
+      <div id="wall-clock" class="ml-auto text-muted font-semibold tracking-wide leading-none">
+        <span id="clock-time" class="text-xl"></span><sup id="clock-ampm" class="text-[0.6rem] font-medium ml-0.5 tracking-wide"></sup>
+      </div>
+    </div>
+
+    <!-- Elapsed timer -->
+    <div class="text-center mb-5">
+      <span id="elapsed" class="text-6xl font-bold tracking-widest text-muted transition-colors duration-300 leading-none">00:00</span>
+    </div>
+
+    <!-- Buttons -->
+    <div class="flex flex-wrap gap-3">
+      <button id="btn-start"
+        class="px-5 py-2 rounded-lg bg-accent text-white font-semibold text-sm transition-all hover:bg-blue-500 active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed disabled:scale-100">
+        Start
+      </button>
+      <button id="btn-log" disabled
+        class="px-5 py-2 rounded-lg bg-success text-black font-semibold text-sm transition-all hover:bg-emerald-400 active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed disabled:scale-100">
+        Log
+      </button>
+      <button id="btn-stop" disabled
+        class="ml-auto px-5 py-2 rounded-lg bg-danger text-white font-semibold text-sm transition-all hover:bg-red-600 active:scale-95 disabled:opacity-35 disabled:cursor-not-allowed disabled:scale-100">
+        Stop &amp; Export
+      </button>
+    </div>
+
+    <!-- Note input -->
+    <div id="log-input-area" class="mt-4 gap-3">
+      <input id="note-input" type="text" maxlength="500" autocomplete="off"
+        placeholder="Enter note and press Enter or Submit…"
+        class="flex-1 bg-base border border-border rounded-lg text-[#e2e4ed] text-sm px-3.5 py-2 outline-none focus:border-accent transition-colors placeholder-muted">
+      <button id="btn-submit-note"
+        class="px-4 py-2 rounded-lg bg-accent text-white font-semibold text-sm hover:bg-blue-500 active:scale-95 transition-all">
+        Submit
+      </button>
+    </div>
   </div>
 
-  <div id="elapsed-display">
-    <span id="elapsed">00:00</span>
+  <!-- Log entries card -->
+  <div class="w-full max-w-2xl bg-surface border border-border rounded-xl p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-base font-semibold">Session Log</h2>
+      <span id="entry-count" class="text-xs text-muted bg-base border border-border rounded-full px-3 py-0.5">0 entries</span>
+    </div>
+
+    <div class="overflow-x-auto rounded-lg border border-border">
+      <table class="w-full border-collapse text-sm">
+        <thead>
+          <tr class="bg-base">
+            <th class="text-right text-xs font-semibold text-muted uppercase tracking-wide px-3 py-2 w-10">#</th>
+            <th class="text-left  text-xs font-semibold text-muted uppercase tracking-wide px-3 py-2 w-44 whitespace-nowrap">Timestamp</th>
+            <th class="text-left  text-xs font-semibold text-muted uppercase tracking-wide px-3 py-2 w-20">Elapsed</th>
+            <th class="text-left  text-xs font-semibold text-muted uppercase tracking-wide px-3 py-2">Note</th>
+          </tr>
+        </thead>
+        <tbody id="log-body">
+          <tr id="empty-row">
+            <td colspan="4" class="text-center text-muted text-sm py-8">
+              No entries yet. Start a session and click Log to add notes.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <div class="controls">
-    <button id="btn-start">Start</button>
-    <button id="btn-log" disabled>Log</button>
-    <button id="btn-stop" disabled>Stop &amp; Export</button>
-  </div>
-
-  <div id="log-input-area">
-    <input id="note-input" type="text" placeholder="Enter note and press Enter or Submit…" maxlength="500" autocomplete="off">
-    <button id="btn-submit-note">Submit</button>
-  </div>
-</div>
-
-<!-- Log entries -->
-<div class="card">
-  <div class="log-header">
-    <h2>Session Log</h2>
-    <span id="entry-count">0 entries</span>
-  </div>
-  <div class="table-wrap">
-    <table id="log-table">
-      <thead>
-        <tr>
-          <th class="td-seq">#</th>
-          <th class="td-time">Timestamp</th>
-          <th class="td-elapsed">Elapsed</th>
-          <th>Note</th>
-        </tr>
-      </thead>
-      <tbody id="log-body">
-        <tr id="empty-row">
-          <td colspan="4">
-            <div id="empty-state">No entries yet. Start a session and click Log to add notes.</div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<footer>Production Logger &mdash; data never leaves your browser.</footer>
+  <footer class="mt-auto pt-4 text-muted text-xs text-center">
+    Production Logger &mdash; data never leaves your browser.
+  </footer>
 
 <script>
   // Wall clock
@@ -394,8 +175,6 @@
     let entries = [];
     let timerInterval = null;
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
     function pad(n, w = 2) { return String(n).padStart(w, '0'); }
 
     function formatDatetime(d) {
@@ -418,8 +197,6 @@
       return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     }
 
-    // ── Session timer ─────────────────────────────────────────────────────────
-
     function startTimer() {
       timerInterval = setInterval(() => {
         elapsedEl.textContent = elapsedSince(sessionStart, Date.now());
@@ -431,23 +208,19 @@
       timerInterval = null;
     }
 
-    // ── UI state helpers ──────────────────────────────────────────────────────
-
     function setActive(active) {
       statusDot.classList.toggle('active', active);
       statusText.classList.toggle('active', active);
       statusText.textContent = active ? 'Session active' : 'Session stopped';
-      btnStart.disabled  =  active;
-      btnLog.disabled    = !active;
-      btnStop.disabled   = !active;
+      btnStart.disabled =  active;
+      btnLog.disabled   = !active;
+      btnStop.disabled  = !active;
     }
 
     function hideInput() {
       inputArea.classList.remove('visible');
       noteInput.value = '';
     }
-
-    // ── Add entry ─────────────────────────────────────────────────────────────
 
     function addEntry(note) {
       note = note.trim();
@@ -462,15 +235,14 @@
       };
       entries.push(entry);
 
-      // Remove empty state row if present
       if (emptyRow.parentNode) emptyRow.remove();
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td class="td-seq">${entry.seq}</td>
-        <td class="td-time">${entry.timestamp}</td>
-        <td class="td-elapsed">${entry.elapsed}</td>
-        <td class="td-note">${entry.note.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>
+        <td class="text-right text-muted px-3 py-2 align-top">${entry.seq}</td>
+        <td class="text-muted px-3 py-2 align-top whitespace-nowrap" style="font-variant-numeric:tabular-nums">${entry.timestamp}</td>
+        <td class="text-muted px-3 py-2 align-top whitespace-nowrap" style="font-variant-numeric:tabular-nums">${entry.elapsed}</td>
+        <td class="px-3 py-2 align-top break-words">${entry.note.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>
       `;
       logBody.appendChild(tr);
 
@@ -481,15 +253,10 @@
       tr.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // ── CSV export ────────────────────────────────────────────────────────────
-
     function exportCsv() {
       const header = ['#', 'Timestamp', 'Elapsed', 'Note'];
       const rows = entries.map(e => [e.seq, e.timestamp, e.elapsed, e.note]);
-
-      const csv = [header, ...rows]
-        .map(row => row.map(escapeCsv).join(','))
-        .join('\r\n');
+      const csv = [header, ...rows].map(row => row.map(escapeCsv).join(',')).join('\r\n');
 
       const now = new Date();
       const fname = `production-log_${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`
@@ -501,8 +268,6 @@
       a.href = url; a.download = fname; a.click();
       URL.revokeObjectURL(url);
     }
-
-    // ── Event handlers ────────────────────────────────────────────────────────
 
     btnStart.addEventListener('click', () => {
       sessionStart = Date.now();
@@ -532,15 +297,13 @@
       hideInput();
       elapsedEl.textContent = '00:00';
       elapsedEl.classList.remove('active');
-      if (entries.length > 0) {
-        exportCsv();
-      }
+      if (entries.length > 0) exportCsv();
     });
 
     btnSubmit.addEventListener('click', () => addEntry(noteInput.value));
 
     noteInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') addEntry(noteInput.value);
+      if (e.key === 'Enter')  addEntry(noteInput.value);
       if (e.key === 'Escape') hideInput();
     });
   })();
